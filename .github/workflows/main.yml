@@ -15,15 +15,19 @@ jobs:
 
       - name: Extract project zip if needed
         run: |
-          if [ ! -f "gradlew" ] && [ -f "callai-nov-23-2026-11-39-18-pm.zip" ]; then
-            unzip -q callai-nov-23-2026-11-39-18-pm.zip -d extracted_proj
-            if [ -f "extracted_proj/gradlew" ]; then
-              mv extracted_proj/* .
+          if [ -f "callai-nov-23-2026-11-39-18-pm.zip" ]; then
+            unzip -o -q callai-nov-23-2026-11-39-18-pm.zip -d extracted_proj
+            if [ -d "extracted_proj/app" ]; then
+              cp -rn extracted_proj/* . || true
             else
               inner_dir=$(find extracted_proj -mindepth 1 -maxdepth 1 -type d | head -n 1)
-              mv "$inner_dir"/* .
+              if [ -n "$inner_dir" ]; then
+                cp -rn "$inner_dir"/* . || true
+              fi
             fi
+            rm -rf extracted_proj
           fi
+          ls -la
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -32,11 +36,16 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Grant execute permission for gradlew
-        run: chmod +x gradlew
-
-      - name: Assemble Debug APK
-        run: ./gradlew assembleDebug
+      - name: Build Debug APK
+        run: |
+          if [ -f "gradlew" ]; then
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          else
+            gradle wrapper --no-daemon
+            chmod +x gradlew
+            ./gradlew assembleDebug
+          fi
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
