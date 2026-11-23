@@ -13,6 +13,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Extract project zip if needed
+        run: |
+          if [ ! -f "gradlew" ] && [ -f "callai-nov-23-2026-11-39-18-pm.zip" ]; then
+            unzip -q callai-nov-23-2026-11-39-18-pm.zip -d extracted_proj
+            if [ -f "extracted_proj/gradlew" ]; then
+              mv extracted_proj/* .
+            else
+              inner_dir=$(find extracted_proj -mindepth 1 -maxdepth 1 -type d | head -n 1)
+              mv "$inner_dir"/* .
+            fi
+          fi
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
